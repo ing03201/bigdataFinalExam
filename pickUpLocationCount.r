@@ -34,21 +34,36 @@ files <- files[-1]
 files
 
 map.fun <- function(k, v){
+  # v[,13]: pickup_datetime
+  # v[,15]: passenger_count
   # v[,18]: pickup_longitude
   # v[,19]: pick_latitude
-  longitude = round(v[,18],digit=3);
-  latitude = round(v[,19],digit=3);
-  latlong <- paste(latitude, longitude,sep=",")
-  keyval(latlong, 1)
+  keyval(v[,13],c(v[,19],v[,18], v[,15]))
 }
+library(lubridate)
 # payment_type을 key로 fare_amount의 합을 value로 반환
 reduce.fun <- function(k, v){
-  keyval(k,sum(v))
+  if(v[1] < 30 || v[1] > 60 || v[2] > -70 || v[2] < -90){
+    latitude <- 0
+    longitude <- 0
+  }
+  else{
+    latitude <- round(v[1],digit=3)
+    longitude <- round(v[2],digit=3)
+  }
+  dateTime <- strsplit(k, split=" ")
+  date <- as.Date(dateTime[[1]][1])
+  time <- strsplit(dateTime[[1]][2],split =":")
+  data.frame(
+    weekDay=weekdays(date),
+    hour=as.numeric(time[[1]][1]),
+    lat=latitude, lon=longitude, 
+    peopleCount=mean(v[3])
+  )
 }
-# mapreduce 프레임워크 실행
-# 파일 하나만 입력 자료로 사용
-mr <- mapreduce( input = files,
+
+mr <- mapreduce( input = files[1],
                  input.format = input.format,
                  map = map.fun,
                  reduce = reduce.fun )
-from.dfs(mr)
+print(from.dfs(mr))
