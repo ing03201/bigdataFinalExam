@@ -66,4 +66,14 @@ mr <- mapreduce( input = files[1],
                  input.format = input.format,
                  map = map.fun,
                  reduce = reduce.fun )
-print(from.dfs(mr))
+mrValue <- values(from.dfs(mr))
+mrValue <-  mrValue[!(mrValue$peopleCount == 0 ), ] ## 결측값 제거
+library(ggmap)
+register_google(key="AIzaSyBsy4BCCKX4MeirWy65AAbfI_FSYqePGlk")
+date <- Sys.Date()
+time <-Sys.time()
+filteredData <- mrValue[mrValue$weekDay == weekdays(date),]
+#filteredData <- filteredData[mrValue$hour == hour(Sys.time()),]
+nycMap <- ggmap(get_map(location = c(lon = -74.00, lat = 40.73), maptype="roadmap",zoom=13))
+mapResult <- nycMap +  stat_density_2d(data=mrValue, aes(x=lon, y=lat, fill=..level.., alpha=..level..), geom='polygon', size=7, bins=28)
+mapResult <- mapResult +  scale_fill_gradient(low='yellow', high='red') +  scale_alpha(range=c(0.02, 0.8), guide=F)
